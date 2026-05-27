@@ -5,10 +5,12 @@ import math
 
 # ---------------- BULLET CLASS ----------------
 class Bullet:
-    def __init__(self, x, y, angle):
+    def __init__(self, x, y, angle, owner):
         self.x = x
         self.y = y
         self.angle = angle
+        self.owner = owner
+        
 
         self.radius = 5
         self.speed = 10
@@ -33,9 +35,12 @@ class Bullet:
 
 # ---------------- TANK CLASS ----------------
 class Tank:
-    def __init__(self, x, y):
+    def __init__(self, x, y, controls, color):
         self.x = x
         self.y = y
+        self.controls = controls
+        self.color = color
+
 
         self.speed = 5
         self.rotation_speed = 4
@@ -45,24 +50,45 @@ class Tank:
     def move(self, keys):
 
         # WASD movement
-        if keys[pygame.K_w]:
+        if keys[self.controls['up']]:
             self.y -= self.speed
 
-        if keys[pygame.K_s]:
+        if keys[self.controls['down']]:
             self.y += self.speed
 
-        if keys[pygame.K_a]:
+        if keys[self.controls['left']]:
             self.x -= self.speed
 
-        if keys[pygame.K_d]:
+        if keys[self.controls['right']]:
             self.x += self.speed
 
+        if self.x < 30:
+            self.x = 30
+        
+        if self.x > WIDTH - 30:
+            self.x = WIDTH - 30
+        
+        if self.y < 30:
+            self.y = 30
+        
+        if self.y > HEIGHT - 30:
+            self.y = HEIGHT - 30
+
+        
         # Rotate using numpad
         if keys[pygame.K_KP4]:
             self.angle += self.rotation_speed
 
         if keys[pygame.K_KP6]:
             self.angle -= self.rotation_speed
+
+    def get_rect(self):
+        return pygame.Rect(
+            self.x - 25,
+            self.y - 25,
+            50,
+            50
+    )
 
     def draw(self, screen):
 
@@ -129,6 +155,10 @@ class Tank:
 # ---------------- INITIALIZE ----------------
 pygame.init()
 
+score1 = 0
+score2 = 0
+
+
 WIDTH, HEIGHT = 800, 600
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -137,7 +167,26 @@ pygame.display.set_caption("Tank Battle")
 clock = pygame.time.Clock()
 FPS = 60
 
-player_tank = Tank(400, 300)
+controls1 = {
+    'up': pygame.K_w,
+    'down': pygame.K_s,
+    'left': pygame.K_a,
+    'right': pygame.K_d
+}
+controls2 = {
+    'up': pygame.K_UP,
+    'down': pygame.K_DOWN,
+    'left': pygame.K_LEFT,
+    'right': pygame.K_RIGHT
+}
+player_tank = Tank(400, 300, controls1, (0, 200, 0))
+player_tank2 = Tank(200, 150, controls2, (200, 0, 0))
+player_tank.x = 400
+player_tank.y = 300
+
+player_tank2.x = 200
+player_tank2.y = 150
+
 
 bullets = []
 
@@ -152,6 +201,7 @@ while True:
             pygame.quit()
             sys.exit()
 
+        
         # Shoot bullet
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
@@ -174,7 +224,33 @@ while True:
                     Bullet(
                         bullet_x,
                         bullet_y,
-                        player_tank.angle
+                        player_tank.angle,
+                        player_tank
+                    )
+                )
+            
+            if event.key == pygame.K_RETURN:
+
+                bullet_x = (
+                    player_tank2.x
+                    + math.cos(
+                        math.radians(player_tank2.angle)
+                    ) * 40
+                )
+
+                bullet_y = (
+                    player_tank2.y
+                    - math.sin(
+                        math.radians(player_tank2.angle)
+                    ) * 40
+                )
+
+                bullets.append(
+                    Bullet(
+                        bullet_x,
+                        bullet_y,
+                        player_tank2.angle,
+                        player_tank2
                     )
                 )
 
@@ -182,23 +258,28 @@ while True:
     keys = pygame.key.get_pressed()
 
     player_tank.move(keys)
+    player_tank2.move(keys)
+    
 
     for bullet in bullets[:]:
         bullet.move()
 
         # Remove offscreen bullets
         if (
-            bullet.x < 0
-            or bullet.x > WIDTH
-            or bullet.y < 0
-            or bullet.y > HEIGHT
+            bullet.owner != player_tank and player_tank2.get_rect().collidepoint(bullet.x, bullet.y)
         ):
+            score2 += 1
             bullets.remove(bullet)
 
+        elif(bullet.owner != player_tank2 and player_tank.get_rect().collidepoint(bullet.x, bullet.y)):
+            score1 += 1
+            bullets.remove(bullet)
     # Draw
     screen.fill((30, 30, 30))
 
     player_tank.draw(screen)
+    player_tank2.draw(screen)
+
 
     for bullet in bullets:
         bullet.draw(screen)
