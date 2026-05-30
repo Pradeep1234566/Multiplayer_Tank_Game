@@ -27,7 +27,7 @@ class Tank:
 
         # ---------------- LOAD TANK IMAGE ----------------
         self.tank_image = pygame.image.load(
-            "tank_game/assets/Tank_top.png"
+            "assets/Tank_top.png"
         ).convert_alpha()
 
         self.tank_image = pygame.transform.scale(
@@ -48,6 +48,7 @@ class Tank:
         if keys[
             self.controls["up"]
         ]:
+            print("MOVE UP")
             self.y -= self.speed
 
         if keys[
@@ -116,11 +117,11 @@ class Tank:
     def get_rect(self):
 
         return pygame.Rect(
-            self.x - 60,
-            self.y - 60,
-            120,
-            120
-        )
+            self.x - 35,
+            self.y - 35,
+            70,
+            70
+        )   
 
     def draw(
         self,
