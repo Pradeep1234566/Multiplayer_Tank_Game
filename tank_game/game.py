@@ -11,8 +11,10 @@ class Bullet:
         self.angle = angle
         self.owner = owner
 
-        self.radius = 5
-        self.speed = 10
+        self.radius = 8
+        self.speed = 12
+
+        self.bounces = 1
 
     def move(self):
         self.x += math.cos(
@@ -32,6 +34,23 @@ class Bullet:
         )
 
 
+# ---------------- OBSTACLE CLASS ----------------
+class Obstacle:
+    def __init__(self, x, y, width, height):
+        self.rect = pygame.Rect(
+            x,
+            y,
+            width,
+            height
+        )
+
+    def draw(self, screen):
+        pygame.draw.rect(
+            screen,
+            (120, 120, 120),
+            self.rect)
+
+
 # ---------------- TANK CLASS ----------------
 class Tank:
     def __init__(self, x, y, controls, color):
@@ -41,11 +60,15 @@ class Tank:
         self.controls = controls
         self.color = color
 
-        self.speed = 5
+        self.speed = 6
         self.rotation_speed = 4
+
         self.angle = 0
 
     def move(self, keys):
+
+        old_x = self.x
+        old_y = self.y
 
         # Movement
         if keys[self.controls['up']]:
@@ -67,25 +90,26 @@ class Tank:
         if keys[self.controls['rotate_right']]:
             self.angle -= self.rotation_speed
 
-        # Wall collision
-        if self.x < 30:
-            self.x = 30
+        # Screen boundaries
+        self.x = max(60, min(WIDTH - 60, self.x))
+        self.y = max(60, min(HEIGHT - 60, self.y))
 
-        if self.x > WIDTH - 30:
-            self.x = WIDTH - 30
+        # Obstacle collision
+        tank_rect = self.get_rect()
 
-        if self.y < 30:
-            self.y = 30
-
-        if self.y > HEIGHT - 30:
-            self.y = HEIGHT - 30
+        for obstacle in obstacles:
+            if tank_rect.colliderect(
+                obstacle.rect
+            ):
+                self.x = old_x
+                self.y = old_y
 
     def get_rect(self):
         return pygame.Rect(
-            self.x - 25,
-            self.y - 25,
-            50,
-            50
+            self.x - 50,
+            self.y - 50,
+            100,
+            100
         )
 
     def draw(self, screen):
@@ -93,12 +117,13 @@ class Tank:
         center_x = self.x
         center_y = self.y
 
+        # Bigger tank
         tank_points = [
-            (-30, -20),
-            (15, -20),
-            (30, 0),
-            (15, 20),
-            (-30, 20)
+            (-60, -40),
+            (30, -40),
+            (60, 0),
+            (30, 40),
+            (-60, 40)
         ]
 
         rotated_points = []
@@ -106,13 +131,21 @@ class Tank:
         for px, py in tank_points:
 
             rotated_x = (
-                px * math.cos(math.radians(self.angle))
-                - py * math.sin(math.radians(self.angle))
+                px * math.cos(
+                    math.radians(self.angle)
+                )
+                - py * math.sin(
+                    math.radians(self.angle)
+                )
             )
 
             rotated_y = (
-                px * math.sin(math.radians(self.angle))
-                + py * math.cos(math.radians(self.angle))
+                px * math.sin(
+                    math.radians(self.angle)
+                )
+                + py * math.cos(
+                    math.radians(self.angle)
+                )
             )
 
             rotated_points.append(
@@ -122,47 +155,60 @@ class Tank:
                 )
             )
 
-        # Draw tank body
+        # Tank body
         pygame.draw.polygon(
             screen,
             self.color,
             rotated_points
         )
 
-        # Draw turret
-        turret_length = 40
+        # Bigger turret
+        turret_length = 80
 
-        turret_x = center_x + math.cos(
-            math.radians(self.angle)
-        ) * turret_length
+        turret_x = (
+            center_x
+            + math.cos(
+                math.radians(self.angle)
+            ) * turret_length
+        )
 
-        turret_y = center_y - math.sin(
-            math.radians(self.angle)
-        ) * turret_length
+        turret_y = (
+            center_y
+            - math.sin(
+                math.radians(self.angle)
+            ) * turret_length
+        )
 
         pygame.draw.line(
             screen,
-            (120, 120, 120),
+            (150, 150, 150),
             (center_x, center_y),
             (turret_x, turret_y),
-            8
+            12
         )
 
 
 # ---------------- INITIALIZE ----------------
 pygame.init()
 
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 1400, 900
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Tank Battle")
+screen = pygame.display.set_mode(
+    (WIDTH, HEIGHT)
+)
+
+pygame.display.set_caption(
+    "Tank Battle"
+)
 
 clock = pygame.time.Clock()
 FPS = 60
 
-font = pygame.font.Font(None, 40)
+font = pygame.font.Font(
+    None,
+    50
+)
 
-# Scores
 score1 = 0
 score2 = 0
 
@@ -189,20 +235,53 @@ controls2 = {
 
 # ---------------- PLAYERS ----------------
 player_tank = Tank(
-    400,
-    300,
+    250,
+    450,
     controls1,
     (0, 200, 0)
 )
 
 player_tank2 = Tank(
-    200,
-    150,
+    1150,
+    450,
     controls2,
     (200, 0, 0)
 )
 
 bullets = []
+
+
+# ---------------- OBSTACLES ----------------
+obstacles = [
+
+    Obstacle(
+        600,
+        150,
+        40,
+        300
+    ),
+
+    Obstacle(
+        800,
+        500,
+        300,
+        40
+    ),
+
+    Obstacle(
+        250,
+        650,
+        350,
+        40
+    ),
+
+    Obstacle(
+        1000,
+        200,
+        40,
+        250
+    )
+]
 
 
 # ---------------- GAME LOOP ----------------
@@ -215,7 +294,6 @@ while True:
             pygame.quit()
             sys.exit()
 
-        # Shoot bullets
         if event.type == pygame.KEYDOWN:
 
             # Player 1 Shoot
@@ -224,15 +302,19 @@ while True:
                 bullet_x = (
                     player_tank.x
                     + math.cos(
-                        math.radians(player_tank.angle)
-                    ) * 40
+                        math.radians(
+                            player_tank.angle
+                        )
+                    ) * 80
                 )
 
                 bullet_y = (
                     player_tank.y
                     - math.sin(
-                        math.radians(player_tank.angle)
-                    ) * 40
+                        math.radians(
+                            player_tank.angle
+                        )
+                    ) * 80
                 )
 
                 bullets.append(
@@ -250,15 +332,19 @@ while True:
                 bullet_x = (
                     player_tank2.x
                     + math.cos(
-                        math.radians(player_tank2.angle)
-                    ) * 40
+                        math.radians(
+                            player_tank2.angle
+                        )
+                    ) * 80
                 )
 
                 bullet_y = (
                     player_tank2.y
                     - math.sin(
-                        math.radians(player_tank2.angle)
-                    ) * 40
+                        math.radians(
+                            player_tank2.angle
+                        )
+                    ) * 80
                 )
 
                 bullets.append(
@@ -281,7 +367,72 @@ while True:
 
         bullet.move()
 
-        # Remove offscreen bullets
+        bullet_rect = pygame.Rect(
+            bullet.x - 5,
+            bullet.y - 5,
+            10,
+            10
+        )
+
+        # Bounce off obstacles
+        for obstacle in obstacles:
+
+            if bullet_rect.colliderect(
+                obstacle.rect
+            ):
+
+                overlap_left = abs(
+                    bullet_rect.right
+                    - obstacle.rect.left
+                )
+
+                overlap_right = abs(
+                    bullet_rect.left
+                    - obstacle.rect.right
+                )
+
+                overlap_top = abs(
+                    bullet_rect.bottom
+                    - obstacle.rect.top
+                )
+
+                overlap_bottom = abs(
+                    bullet_rect.top
+                    - obstacle.rect.bottom
+                )
+
+                min_overlap = min(
+                    overlap_left,
+                    overlap_right,
+                    overlap_top,
+                    overlap_bottom
+                )
+
+                # Side bounce
+                if (
+                    min_overlap
+                    == overlap_left
+                    or min_overlap
+                    == overlap_right
+                ):
+                    bullet.angle = (
+                        180 - bullet.angle
+                    )
+
+                # Top/bottom bounce
+                else:
+                    bullet.angle = (
+                        -bullet.angle
+                    )
+
+                bullet.bounces -= 1
+                break
+
+        if bullet.bounces < 0:
+            bullets.remove(bullet)
+            continue
+
+        # Off screen
         if (
             bullet.x < 0
             or bullet.x > WIDTH
@@ -303,9 +454,8 @@ while True:
             score1 += 1
             bullets.remove(bullet)
 
-            # Respawn player 2
-            player_tank2.x = 200
-            player_tank2.y = 150
+            player_tank2.x = 1150
+            player_tank2.y = 450
             player_tank2.angle = 0
 
         # Player 2 hits Player 1
@@ -320,13 +470,16 @@ while True:
             score2 += 1
             bullets.remove(bullet)
 
-            # Respawn player 1
-            player_tank.x = 400
-            player_tank.y = 300
+            player_tank.x = 250
+            player_tank.y = 450
             player_tank.angle = 0
 
     # Draw
     screen.fill((30, 30, 30))
+
+    # Obstacles
+    for obstacle in obstacles:
+        obstacle.draw(screen)
 
     player_tank.draw(screen)
     player_tank2.draw(screen)
@@ -334,14 +487,17 @@ while True:
     for bullet in bullets:
         bullet.draw(screen)
 
-    # Draw score
+    # Score
     score_text = font.render(
-        f"Player 1: {score1}    Player 2: {score2}",
+        f"P1: {score1}     P2: {score2}",
         True,
         (255, 255, 255)
     )
 
-    screen.blit(score_text, (20, 20))
+    screen.blit(
+        score_text,
+        (20, 20)
+    )
 
     pygame.display.flip()
 
