@@ -1,69 +1,44 @@
 import pygame
 import math
-
 from settings import *
 
 
 class Bullet:
+    """
+    Projectile — glowing dot with a bright core.
+    """
 
-    def __init__(
-        self,
-        x,
-        y,
-        angle,
-        owner
-    ):
+    SPEED = BULLET_SPEED
 
-        self.x = x
-        self.y = y
-
+    def __init__(self, x, y, angle, owner):
+        self.x     = float(x)
+        self.y     = float(y)
         self.angle = angle
         self.owner = owner
 
-        self.speed = BULLET_SPEED
-        self.radius = BULLET_RADIUS
+        rad = math.radians(angle)
+        self.vx =  math.cos(rad) * self.SPEED
+        self.vy = -math.sin(rad) * self.SPEED
 
-        self.bounces = BOUNCE_COUNT
+        # Colour derived from owner colour
+        c = getattr(owner, "color", (255, 255, 100))
+        self._core_col  = (255, 255, 200)
+        self._outer_col = (c[0], c[1], min(255, c[2] + 60))
 
     def move(self):
+        self.x += self.vx
+        self.y += self.vy
 
-        self.x += (
-            math.cos(
-                math.radians(
-                    self.angle
-                )
-            )
-            * self.speed
-        )
+    def draw(self, screen: pygame.Surface):
+        ix, iy = int(self.x), int(self.y)
 
-        self.y -= (
-            math.sin(
-                math.radians(
-                    self.angle
-                )
-            )
-            * self.speed
-        )
+        # Soft outer glow
+        glow = pygame.Surface((18, 18), pygame.SRCALPHA)
+        pygame.draw.circle(glow, (*self._outer_col, 60), (9, 9), 9)
+        screen.blit(glow, (ix - 9, iy - 9))
 
-    def draw(self, screen):
+        # Mid ring
+        pygame.draw.circle(screen, self._outer_col, (ix, iy), 5)
 
-        # Glow
-        pygame.draw.circle(
-            screen,
-            BULLET_OUTER,
-            (
-                int(self.x),
-                int(self.y)
-            ),
-            self.radius
-        )
-
-        pygame.draw.circle(
-            screen,
-            BULLET_INNER,
-            (
-                int(self.x),
-                int(self.y)
-            ),
-            self.radius // 2
-        )
+        # Bright core
+        pygame.draw.circle(screen, self._core_col, (ix, iy), 3)
