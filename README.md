@@ -2,7 +2,7 @@
 
 A real-time **2-player online multiplayer tank game** built from scratch in Python using Pygame and TCP sockets. Two players connect over the internet, control tanks, shoot bouncing projectiles, and compete to reach the win score.
 
-![Tank Battle Screenshot](assets/screenshot.png)
+![Tank Battle Screenshot](tank_game/assets/Working.png)
 
 ---
 
